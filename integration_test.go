@@ -66,29 +66,8 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	// Start a goroutine to monitor the logs
-	go func() {
-		logCmd := exec.Command("/bin/sh", "-c", dockerLogsCmd)
-		// All output is written to stderr.
-		stderr, err := logCmd.StderrPipe()
-		if err != nil {
-			fmt.Printf("Log stderr pipe: %v", err)
-			os.Exit(1)
-		}
-		if err := logCmd.Start(); err != nil {
-			fmt.Printf("Starting log: %v", err)
-			os.Exit(1)
-		}
-
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if strings.HasPrefix(line, "FATAL") || strings.HasPrefix(line, "ERROR") {
-				fmt.Printf("Container log error: %s\n", line)
-				os.Exit(1)
-			}
-		}
-	}()
+	defer teardown()
+	go monitorLogs()
 
 	// Wait for the server to start
 	time.Sleep(time.Second * 5)
@@ -98,16 +77,37 @@ func TestMain(m *testing.M) {
 
 	// Cool down period to notice any errors occuring later after running tests.
 	time.Sleep(time.Second * 1)
+	os.Exit(result)
+}
 
-	// Stop docker container
-	{
-		out, err := exec.Command("/bin/sh", "-c", dockerStopCmd).CombinedOutput()
-		if err != nil {
-			fmt.Printf("Failed to stop docker container: %s\n%s", err, out)
-			os.Exit(1)
+func teardown() {
+	out, err := exec.Command("/bin/sh", "-c", dockerStopCmd).CombinedOutput()
+	if err != nil {
+		fmt.Printf("Failed to stop docker container: %s\n%s", err, out)
+		os.Exit(1)
+	}
+}
+
+func monitorLogs() {
+	defer teardown()
+
+	logCmd := exec.Command("/bin/sh", "-c", dockerLogsCmd)
+	// All output is written to stderr.
+	stderr, err := logCmd.StderrPipe()
+	if err != nil {
+		panic(fmt.Sprintf("Log stderr pipe: %v\n", err))
+	}
+	if err := logCmd.Start(); err != nil {
+		panic(fmt.Sprintf("Starting log: %v\n", err))
+	}
+
+	scanner := bufio.NewScanner(stderr)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "FATAL") || strings.HasPrefix(line, "ERROR") {
+			panic(fmt.Sprintf("Container log error: %s\n", line))
 		}
 	}
-	os.Exit(result)
 }
 
 func TestVersionEndpoint(t *testing.T) {
