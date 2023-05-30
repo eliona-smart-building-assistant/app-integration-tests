@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,33 +17,40 @@ const (
 	dockerStopCmd  = "docker stop go-app-container"
 )
 
+var appLocation string
+
 func TestMain(m *testing.M) {
-	// TODO: Get location as param.
-	dockerfilePath := "../kontakt-io-app/"
+	flag.StringVar(&appLocation, "app", "", "Path to app")
+	flag.Parse()
+
+	if appLocation == "" {
+		fmt.Println("App path must be provided. Use -app argument.")
+		os.Exit(1)
+	}
 
 	apiEndpoint, present := os.LookupEnv("API_ENDPOINT")
 	if !present {
 		fmt.Printf("API_ENDPOINT variable not defined.")
-		return
+		os.Exit(1)
 	}
 	apiToken, present := os.LookupEnv("API_TOKEN")
 	if !present {
 		fmt.Printf("API_TOKEN variable not defined.")
-		return
+		os.Exit(1)
 	}
 	connString, present := os.LookupEnv("CONNECTION_STRING")
 	if !present {
 		fmt.Printf("CONNECTION_STRING variable not defined.")
-		return
+		os.Exit(1)
 	}
 
 	// Build and run docker image
 	{
-		cmd := fmt.Sprintf(dockerBuildCmd, dockerfilePath)
+		cmd := fmt.Sprintf(dockerBuildCmd, appLocation)
 		out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
 		if err != nil {
 			fmt.Printf("Failed to build docker image: %s\n%s", err, out)
-			return
+			os.Exit(1)
 		}
 	}
 
@@ -51,7 +59,7 @@ func TestMain(m *testing.M) {
 		out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
 		if err != nil {
 			fmt.Printf("Failed to start docker container: %s\n%s", err, out)
-			return
+			os.Exit(1)
 		}
 	}
 
@@ -66,6 +74,7 @@ func TestMain(m *testing.M) {
 		out, err := exec.Command("/bin/sh", "-c", dockerStopCmd).CombinedOutput()
 		if err != nil {
 			fmt.Printf("Failed to stop docker container: %s\n%s", err, out)
+			os.Exit(1)
 		}
 	}
 	os.Exit(result)
