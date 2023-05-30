@@ -1,11 +1,13 @@
 package integration_test
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 )
@@ -14,6 +16,7 @@ import (
 const (
 	dockerBuildCmd = "docker build -t go-app-test %s"
 	dockerRunCmd   = "docker run --rm --name go-app-container -d -i -p 3039:3039 -e 'API_ENDPOINT=%s' -e 'API_TOKEN=%s' -e 'CONNECTION_STRING=%s' -e 'LOG_LEVEL=info' -e 'API_SERVER_PORT=3039' go-app-test"
+	dockerLogsCmd  = "docker logs -f go-app-container"
 	dockerStopCmd  = "docker stop go-app-container"
 )
 
@@ -63,11 +66,38 @@ func TestMain(m *testing.M) {
 		}
 	}
 
+	// Start a goroutine to monitor the logs
+	go func() {
+		logCmd := exec.Command("/bin/sh", "-c", dockerLogsCmd)
+		// All output is written to stderr.
+		stderr, err := logCmd.StderrPipe()
+		if err != nil {
+			fmt.Printf("Log stderr pipe: %v", err)
+			os.Exit(1)
+		}
+		if err := logCmd.Start(); err != nil {
+			fmt.Printf("Starting log: %v", err)
+			os.Exit(1)
+		}
+
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "FATAL") || strings.HasPrefix(line, "ERROR") {
+				fmt.Printf("Container log error: %s\n", line)
+				os.Exit(1)
+			}
+		}
+	}()
+
 	// Wait for the server to start
 	time.Sleep(time.Second * 5)
 
 	// Run the tests
 	result := m.Run()
+
+	// Cool down period to notice any errors occuring later after running tests.
+	time.Sleep(time.Second * 1)
 
 	// Stop docker container
 	{
