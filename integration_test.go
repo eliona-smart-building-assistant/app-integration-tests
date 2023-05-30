@@ -25,7 +25,10 @@ const (
 	dockerStopCmd  = "docker stop go-app-container"
 )
 
-var appLocation string
+var (
+	appLocation string
+	metadata    Metadata
+)
 
 func TestMain(m *testing.M) {
 	flag.StringVar(&appLocation, "app", "", "Path to app")
@@ -53,8 +56,19 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	md, err := getMetadata()
+	if err != nil {
+		fmt.Printf("getting metadata: %v", err)
+		os.Exit(1)
+	}
+	if md == nil {
+		panic("shouldn't happen: metadata is nil")
+	}
+	metadata = *md
+
 	if err := resetDB(); err != nil {
 		fmt.Printf("resetting db: %v", err)
+		os.Exit(1)
 	}
 
 	// Build and run docker image
@@ -108,17 +122,16 @@ func resetDB() error {
 	row := db.QueryRow(`
 		SELECT initialized_at
 		FROM public.eliona_app
-		WHERE app_name = 'kontakt-io'
-	`)
+		WHERE app_name = $1;
+	`, metadata.Name)
 	var initialized *time.Time
-	err = row.Scan(&initialized)
-	if err != nil {
-		return fmt.Errorf("executing SELECT statement: %s", err)
+	if err = row.Scan(&initialized); err != nil {
+		return fmt.Errorf("executing SELECT statement: %s\n", err)
 	}
 
 	// Check if the script reset the initialization state of app
 	if initialized != nil {
-		return fmt.Errorf("unexpected result from SELECT statement: got %v, want nil", initialized)
+		return fmt.Errorf("unexpected result from SELECT statement: got %v, want nil\n", initialized)
 	}
 	return nil
 }
@@ -159,6 +172,34 @@ func monitorLogs() {
 			panic(fmt.Sprintf("Container log error: %s\n", line))
 		}
 	}
+}
+
+type Metadata struct {
+	Name                   string            `json:"name"`
+	ElionaMinVersion       string            `json:"elionaMinVersion"`
+	DisplayName            map[string]string `json:"displayName"`
+	Description            map[string]string `json:"description"`
+	DashboardTemplateNames []string          `json:"dashboardTemplateNames"`
+	ApiUrl                 string            `json:"apiUrl"`
+	ApiSpecificationPath   string            `json:"apiSpecificationPath"`
+	DocumentationUrl       string            `json:"documentationUrl"`
+	UseEnvironment         []string          `json:"useEnvironment"`
+}
+
+func getMetadata() (*Metadata, error) {
+	file, err := os.Open("metadata.json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to open metadata.json: %w", err)
+	}
+	defer file.Close()
+
+	var metadata Metadata
+	err = json.NewDecoder(file).Decode(&metadata)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode metadata.json: %w", err)
+	}
+
+	return &metadata, nil
 }
 
 type VersionResponse struct {
