@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"image"
@@ -32,32 +33,23 @@ const (
 
 var (
 	appLocation string
+	db          *sql.DB
 	metadata    Metadata
+
+	apiEndpoint string
+	apiToken    string
+	connString  string
 )
 
 func TestMain(m *testing.M) {
-	flag.StringVar(&appLocation, "app", "", "Path to app")
-	flag.Parse()
+	handleFlags()
+	if err := os.Chdir(appLocation); err != nil {
+		fmt.Printf("chdir to %s: %v", appLocation, err)
+		os.Exit(1)
+	}
 
-	if appLocation == "" {
-		fmt.Println("App path must be provided. Use -app argument.")
-		os.Exit(1)
-	}
-	os.Chdir(appLocation)
-
-	apiEndpoint, present := os.LookupEnv("API_ENDPOINT")
-	if !present {
-		fmt.Printf("API_ENDPOINT variable not defined.")
-		os.Exit(1)
-	}
-	apiToken, present := os.LookupEnv("API_TOKEN")
-	if !present {
-		fmt.Printf("API_TOKEN variable not defined.")
-		os.Exit(1)
-	}
-	connString, present := os.LookupEnv("CONNECTION_STRING")
-	if !present {
-		fmt.Printf("CONNECTION_STRING variable not defined.")
+	if err := checkEnvVars(); err != nil {
+		fmt.Printf("checking environment variables: %v", err)
 		os.Exit(1)
 	}
 
@@ -105,6 +97,36 @@ func TestMain(m *testing.M) {
 	time.Sleep(time.Second * 1)
 	teardown()
 	os.Exit(result)
+}
+
+func handleFlags() {
+	flag.StringVar(&appLocation, "app", "", "Path to app")
+	flag.Parse()
+
+	if appLocation == "" {
+		fmt.Println("App path must be provided. Use -app argument.")
+		os.Exit(1)
+	}
+}
+
+func checkEnvVars() error {
+	var present bool
+
+	apiEndpoint, present = os.LookupEnv("API_ENDPOINT")
+	if !present {
+		return errors.New("API_ENDPOINT variable not defined.")
+	}
+
+	apiToken, present = os.LookupEnv("API_TOKEN")
+	if !present {
+		return errors.New("API_TOKEN variable not defined.")
+	}
+
+	connString, present = os.LookupEnv("CONNECTION_STRING")
+	if !present {
+		return errors.New("CONNECTION_STRING variable not defined.")
+	}
+	return nil
 }
 
 func resetDB() error {
