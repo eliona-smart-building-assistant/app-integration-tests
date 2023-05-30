@@ -3,6 +3,7 @@ package integration_test
 import (
 	"bufio"
 	"database/sql"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -160,18 +161,31 @@ func monitorLogs() {
 	}
 }
 
+type VersionResponse struct {
+	Commit    string `json:"commit"`
+	Timestamp string `json:"timestamp"`
+}
+
 func TestVersionEndpoint(t *testing.T) {
-	// Test the /version endpoint
 	resp, err := http.Get("http://localhost:3039/v1/version")
 	if err != nil {
 		t.Fatalf("Failed to send request to /version: %s", err)
 	}
 	defer resp.Body.Close()
 
-	// Check the status code
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("Expected status OK but got %d", resp.StatusCode)
 	}
 
-	// TODO: Check if any content.
+	var versionResponse VersionResponse
+	err = json.NewDecoder(resp.Body).Decode(&versionResponse)
+	if err != nil {
+		t.Fatalf("Failed to decode response body: %s", err)
+	}
+	if versionResponse.Commit == "" {
+		t.Error("Commit field is empty")
+	}
+	if versionResponse.Timestamp == "" {
+		t.Error("Timestamp field is empty")
+	}
 }
