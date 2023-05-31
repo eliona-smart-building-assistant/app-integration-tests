@@ -94,6 +94,7 @@ func TestMain(m *testing.M) {
 
 func handleFlags() {
 	flag.StringVar(&appLocation, "app", "", "Path to app")
+	// TODO: flag.Usage()
 	flag.Parse()
 
 	if appLocation == "" {

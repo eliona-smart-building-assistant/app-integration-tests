@@ -38,4 +38,6 @@ func TestIconFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to decode image data: %s", err)
 	}
+
+	// TODO: Check for file size. The file must fit 2¹⁶ bytes.
 }
