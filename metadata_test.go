@@ -29,6 +29,11 @@ func TestIconFile(t *testing.T) {
 		t.Fatalf("Invalid icon data prefix")
 	}
 
+	if len(iconData) > 63*1024 {
+		// The size limit for "text" type in db is 64 kB. Let's set the limit a little lower for safety.
+		t.Fatalf("Image size is larger than size limit: %d bytes", len(iconData))
+	}
+
 	decodedData, err := base64.StdEncoding.DecodeString(strings.SplitN(string(iconData), ",", 2)[1])
 	if err != nil {
 		t.Fatalf("Failed to decode base64 data: %s", err)
@@ -38,6 +43,4 @@ func TestIconFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to decode image data: %s", err)
 	}
-
-	// TODO: Check for file size. The file must fit 2¹⁶ bytes.
 }
