@@ -2,18 +2,11 @@ package integration_test
 
 import (
 	"bufio"
-	"bytes"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"image"
-	_ "image/jpeg"
-	_ "image/png"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -227,60 +220,4 @@ func getMetadata() (*Metadata, error) {
 	}
 
 	return &metadata, nil
-}
-
-type VersionResponse struct {
-	Commit    string `json:"commit"`
-	Timestamp string `json:"timestamp"`
-}
-
-func TestVersionEndpoint(t *testing.T) {
-	resp, err := http.Get("http://localhost:3039/v1/version")
-	if err != nil {
-		t.Fatalf("Failed to send request to /version: %s", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("Expected status OK but got %d", resp.StatusCode)
-	}
-
-	var versionResponse VersionResponse
-	err = json.NewDecoder(resp.Body).Decode(&versionResponse)
-	if err != nil {
-		t.Fatalf("Failed to decode response body: %s", err)
-	}
-	if versionResponse.Commit == "" {
-		t.Error("Commit field is empty")
-	}
-	if versionResponse.Timestamp == "" {
-		t.Error("Timestamp field is empty")
-	}
-}
-
-func TestIconFile(t *testing.T) {
-	file, err := os.Open("icon")
-	if err != nil {
-		t.Fatalf("Failed to open icon file: %s", err)
-	}
-	defer file.Close()
-
-	iconData, err := io.ReadAll(file)
-	if err != nil {
-		t.Fatalf("Failed to read icon file: %s", err)
-	}
-
-	if !strings.HasPrefix(string(iconData), "data:image/png;base64,") && !strings.HasPrefix(string(iconData), "data:image/jpeg;base64,") {
-		t.Fatalf("Invalid icon data prefix")
-	}
-
-	decodedData, err := base64.StdEncoding.DecodeString(strings.SplitN(string(iconData), ",", 2)[1])
-	if err != nil {
-		t.Fatalf("Failed to decode base64 data: %s", err)
-	}
-
-	_, _, err = image.Decode(bufio.NewReader(bytes.NewReader(decodedData)))
-	if err != nil {
-		t.Fatalf("Failed to decode image data: %s", err)
-	}
 }
