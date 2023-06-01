@@ -1,4 +1,4 @@
-module app-integration-tests
+module github.com/eliona-smart-building-assistant/app-integration-tests
 
 go 1.20
 
