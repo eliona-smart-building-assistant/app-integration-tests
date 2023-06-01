@@ -1,4 +1,4 @@
-package integration_test
+package assert
 
 import (
 	"bufio"
@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestIconFile(t *testing.T) {
+func IconFileIsValid(t *testing.T) bool {
 	file, err := os.Open("icon")
 	if err != nil {
 		t.Fatalf("Failed to open icon file: %s", err)
@@ -43,4 +43,5 @@ func TestIconFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to decode image data: %s", err)
 	}
+	return true
 }
