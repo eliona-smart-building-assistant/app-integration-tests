@@ -1,4 +1,4 @@
-package integration_test
+package assert
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ type VersionResponse struct {
 	Timestamp string `json:"timestamp"`
 }
 
-func TestVersionEndpoint(t *testing.T) {
+func VersionEndpointExists(t *testing.T) bool {
 	resp, err := http.Get("http://localhost:3039/v1/version")
 	if err != nil {
 		t.Fatalf("Failed to send request to /version: %s", err)
@@ -33,4 +33,5 @@ func TestVersionEndpoint(t *testing.T) {
 	if versionResponse.Timestamp == "" {
 		t.Error("Timestamp field is empty")
 	}
+	return true
 }
