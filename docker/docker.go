@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -17,6 +16,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
 
 	_ "github.com/lib/pq"
 )
@@ -32,7 +32,7 @@ const (
 var (
 	appLocation string
 	db          *sql.DB
-	metadata    Metadata
+	metadata    app.Metadata
 
 	apiEndpoint string
 	apiToken    string
@@ -58,15 +58,12 @@ func StartApp() {
 		os.Exit(1)
 	}
 
-	md, err := getMetadata()
+	var err error
+	metadata, err = app.GetMetadata()
 	if err != nil {
 		fmt.Printf("getting metadata: %v", err)
 		os.Exit(1)
 	}
-	if md == nil {
-		panic("shouldn't happen: metadata is nil")
-	}
-	metadata = *md
 
 	if err := resetDB(); err != nil {
 		fmt.Printf("resetting db: %v", err)
@@ -233,32 +230,4 @@ func monitorLogs() {
 			panic(fmt.Sprintf("Container log error: %s\n", line))
 		}
 	}
-}
-
-type Metadata struct {
-	Name                   string            `json:"name"`
-	ElionaMinVersion       string            `json:"elionaMinVersion"`
-	DisplayName            map[string]string `json:"displayName"`
-	Description            map[string]string `json:"description"`
-	DashboardTemplateNames []string          `json:"dashboardTemplateNames"`
-	ApiUrl                 string            `json:"apiUrl"`
-	ApiSpecificationPath   string            `json:"apiSpecificationPath"`
-	DocumentationUrl       string            `json:"documentationUrl"`
-	UseEnvironment         []string          `json:"useEnvironment"`
-}
-
-func getMetadata() (*Metadata, error) {
-	file, err := os.Open("metadata.json")
-	if err != nil {
-		return nil, fmt.Errorf("failed to open metadata.json: %w", err)
-	}
-	defer file.Close()
-
-	var metadata Metadata
-	err = json.NewDecoder(file).Decode(&metadata)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode metadata.json: %w", err)
-	}
-
-	return &metadata, nil
 }
