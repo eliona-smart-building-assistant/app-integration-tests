@@ -2,6 +2,7 @@ package docker
 
 import (
 	"bufio"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -13,15 +14,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/client"
+
 	_ "github.com/lib/pq"
 )
 
 // Assuming Dockerfile is present in the current directory
 const (
 	dockerBuildCmd = "docker build . -t go-app-test"
-	dockerRunCmd   = "docker run --rm --name go-app-container -d -i -p 3039:3039 -e 'API_ENDPOINT=%s' -e 'API_TOKEN=%s' -e 'CONNECTION_STRING=%s' -e 'LOG_LEVEL=info' -e 'API_SERVER_PORT=3039' go-app-test"
-	dockerLogsCmd  = "docker logs -f go-app-container"
-	dockerStopCmd  = "docker stop go-app-container"
+	dockerRunCmd   = "docker run --rm --name go-app-test-container -d -i -p 3030:3039 -e 'API_ENDPOINT=%s' -e 'API_TOKEN=%s' -e 'CONNECTION_STRING=%s' -e 'LOG_LEVEL=info' -e 'API_SERVER_PORT=3030' go-app-test"
+	dockerLogsCmd  = "docker logs -f go-app-test-container"
+	dockerStopCmd  = "docker stop go-app-test-container"
 )
 
 var (
@@ -87,8 +92,10 @@ func StartApp() {
 
 	go monitorLogs()
 
-	// Wait for the server to start
-	time.Sleep(time.Second * 5)
+	if err := waitForContainerReady(); err != nil {
+		fmt.Printf("waiting for container to get ready: %v", err)
+		os.Exit(1)
+	}
 }
 
 func StopApp() {
@@ -173,6 +180,36 @@ func teardown() {
 	if err != nil {
 		fmt.Printf("Failed to stop docker container: %s\n%s", err, out)
 		os.Exit(1)
+	}
+}
+
+func waitForContainerReady() error {
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		return err
+	}
+	defer cli.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("container did not become ready in the specified time")
+		case <-time.After(time.Millisecond * 200):
+			filters := filters.NewArgs()
+			filters.Add("name", "go-app-test-container")
+			containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{
+				Filters: filters,
+			})
+			if err != nil || len(containers) != 1 {
+				continue
+			}
+			if containers[0].State == "running" && containers[0].Status == "healthy" {
+				return nil
+			}
+		}
 	}
 }
 
