@@ -31,7 +31,6 @@ const (
 
 var (
 	appLocation string
-	db          *sql.DB
 	metadata    app.Metadata
 
 	apiEndpoint string
