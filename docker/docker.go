@@ -7,15 +7,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
 
 	_ "github.com/lib/pq"
@@ -24,9 +23,10 @@ import (
 // Assuming Dockerfile is present in the current directory
 const (
 	dockerBuildCmd = "docker build . -t go-app-test"
-	dockerRunCmd   = "docker run --rm --name go-app-test-container -d -i -p 3030:3039 -e 'API_ENDPOINT=%s' -e 'API_TOKEN=%s' -e 'CONNECTION_STRING=%s' -e 'LOG_LEVEL=info' -e 'API_SERVER_PORT=3030' go-app-test"
+	dockerRunCmd   = "docker run --name go-app-test-container --network eliona-mock-network -d -i -p 3039:3039 -e 'API_ENDPOINT=%s' -e 'API_TOKEN=%s' -e 'CONNECTION_STRING=%s' -e 'LOG_LEVEL=info' -e 'API_SERVER_PORT=3039' go-app-test"
 	dockerLogsCmd  = "docker logs -f go-app-test-container"
 	dockerStopCmd  = "docker stop go-app-test-container"
+	dockerRmCmd    = "docker rm go-app-test-container"
 )
 
 var (
@@ -46,6 +46,13 @@ func RunApp(m *testing.M) {
 }
 
 func StartApp() {
+	{
+		out, err := exec.Command("/bin/sh", "-c", dockerRmCmd).CombinedOutput()
+		if err != nil {
+			fmt.Printf("Failed to remove docker image: %s\n%s", err, out)
+		}
+	}
+
 	handleFlags()
 	if err := os.Chdir(appLocation); err != nil {
 		fmt.Printf("chdir to %s: %v", appLocation, err)
@@ -64,12 +71,24 @@ func StartApp() {
 		os.Exit(1)
 	}
 
-	if err := resetDB(); err != nil {
+	db, err := initDB()
+	if err != nil {
+		fmt.Printf("initializing db: %v", err)
+		os.Exit(1)
+	}
+
+	if err := resetDB(db); err != nil {
 		fmt.Printf("resetting db: %v", err)
 		os.Exit(1)
 	}
 
+	if err := addAppToStore(db); err != nil {
+		fmt.Printf("adding app to app store: %v", err)
+		os.Exit(1)
+	}
+
 	// Build and run docker image
+	fmt.Println("Building the image...")
 	{
 		out, err := exec.Command("/bin/sh", "-c", dockerBuildCmd).CombinedOutput()
 		if err != nil {
@@ -77,6 +96,7 @@ func StartApp() {
 			os.Exit(1)
 		}
 	}
+
 	{
 		cmd := fmt.Sprintf(dockerRunCmd, apiEndpoint, apiToken, connString)
 		out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
@@ -89,7 +109,7 @@ func StartApp() {
 	go monitorLogs()
 
 	if err := waitForContainerReady(); err != nil {
-		fmt.Printf("waiting for container to get ready: %v", err)
+		fmt.Printf("waiting for container to get ready: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -129,13 +149,7 @@ func checkEnvVars() error {
 	return nil
 }
 
-func resetDB() error {
-	db, err := initDB()
-	if err != nil {
-		return fmt.Errorf("opening database connection: %s", err)
-	}
-	defer db.Close()
-
+func resetDB(db *sql.DB) error {
 	sqlScript, err := os.ReadFile("reset.sql")
 	if err != nil {
 		return fmt.Errorf("reading SQL script: %s", err)
@@ -171,6 +185,51 @@ func initDB() (*sql.DB, error) {
 	return sql.Open("postgres", connString)
 }
 
+func addAppToStore(db *sql.DB) error {
+	iconFile, err := os.Open("icon")
+	if err != nil {
+		return fmt.Errorf("opening icon file: %s", err)
+	}
+	defer iconFile.Close()
+	iconData, err := io.ReadAll(iconFile)
+	if err != nil {
+		return fmt.Errorf("reading icon file: %s", err)
+	}
+
+	metadataFile, err := os.Open("metadata.json")
+	if err != nil {
+		return fmt.Errorf("opening metadata file: %s", err)
+	}
+	defer metadataFile.Close()
+	metadataData, err := io.ReadAll(metadataFile)
+	if err != nil {
+		return fmt.Errorf("reading metadata file: %s", err)
+	}
+
+	if _, err := db.Exec(`
+		UPDATE eliona_store
+		SET metadata = $1, icon = $2
+		WHERE app_name = $3`, string(metadataData), string(iconData), metadata.Name); err != nil {
+		return fmt.Errorf("executing SQL script: %s", err)
+	}
+
+	row := db.QueryRow(`
+		SELECT initialized_at
+		FROM public.eliona_app
+		WHERE app_name = $1;
+	`, metadata.Name)
+	var initialized *time.Time
+	if err = row.Scan(&initialized); err != nil {
+		return fmt.Errorf("executing SELECT statement: %s\n", err)
+	}
+
+	// Check if the script reset the initialization state of app
+	if initialized != nil {
+		return fmt.Errorf("unexpected result from SELECT statement: got %v, want nil\n", initialized)
+	}
+	return nil
+}
+
 func teardown() {
 	out, err := exec.Command("/bin/sh", "-c", dockerStopCmd).CombinedOutput()
 	if err != nil {
@@ -180,29 +239,23 @@ func teardown() {
 }
 
 func waitForContainerReady() error {
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		return err
-	}
-	defer cli.Close()
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
+	fmt.Println("Waiting for the container to get ready...")
+
+	url := fmt.Sprintf("http://localhost:3039/%s/version", metadata.ApiUrl)
+	client := &http.Client{Timeout: 100 * time.Millisecond}
 	for {
 		select {
 		case <-ctx.Done():
 			return fmt.Errorf("container did not become ready in the specified time")
 		case <-time.After(time.Millisecond * 200):
-			filters := filters.NewArgs()
-			filters.Add("name", "go-app-test-container")
-			containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{
-				Filters: filters,
-			})
-			if err != nil || len(containers) != 1 {
+			resp, err := client.Get(url)
+			if err != nil {
 				continue
 			}
-			if containers[0].State == "running" && containers[0].Status == "healthy" {
+			if resp.StatusCode == http.StatusOK {
 				return nil
 			}
 		}

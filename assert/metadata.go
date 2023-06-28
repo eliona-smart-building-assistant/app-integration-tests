@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func IconFileIsValid(t *testing.T) bool {
+func IconFileIsValid(t *testing.T) {
 	file, err := os.Open("icon")
 	if err != nil {
 		t.Fatalf("Failed to open icon file: %s", err)
@@ -43,5 +43,4 @@ func IconFileIsValid(t *testing.T) bool {
 	if err != nil {
 		t.Fatalf("Failed to decode image data: %s", err)
 	}
-	return true
 }
