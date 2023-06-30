@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -21,12 +22,12 @@ import (
 )
 
 // Assuming Dockerfile is present in the current directory
-const (
-	dockerBuildCmd = "docker build . -t go-app-test"
-	dockerRunCmd   = "docker run --name go-app-test-container --network eliona-mock-network -d -i -p 3039:3039 -e 'API_ENDPOINT=%s' -e 'API_TOKEN=%s' -e 'CONNECTION_STRING=%s' -e 'LOG_LEVEL=info' -e 'API_SERVER_PORT=3039' go-app-test"
-	dockerLogsCmd  = "docker logs -f go-app-test-container"
-	dockerStopCmd  = "docker stop go-app-test-container"
-	dockerRmCmd    = "docker rm go-app-test-container"
+var (
+	dockerBuildCmd = []string{"build", ".", "-t", "go-app-test"}
+	dockerRunCmd   = "run --name go-app-test-container --network eliona-mock-network -d -i -p 3039:3039 -e 'API_ENDPOINT=%s' -e 'API_TOKEN=%s' -e 'CONNECTION_STRING=%s' -e 'LOG_LEVEL=info' -e 'API_SERVER_PORT=3039' go-app-test"
+	dockerLogsCmd  = []string{"logs", "-f", "go-app-test-container"}
+	dockerStopCmd  = []string{"stop", "go-app-test-container"}
+	dockerRmCmd    = []string{"rm", "go-app-test-container"}
 )
 
 var (
@@ -47,7 +48,7 @@ func RunApp(m *testing.M) {
 
 func StartApp() {
 	{
-		out, err := exec.Command("/bin/sh", "-c", dockerRmCmd).CombinedOutput()
+		out, err := exec.Command("docker", dockerRmCmd...).CombinedOutput()
 		if err != nil {
 			fmt.Printf("Failed to remove docker image: %s\n%s", err, out)
 		}
@@ -90,7 +91,7 @@ func StartApp() {
 	// Build and run docker image
 	fmt.Println("Building the image...")
 	{
-		out, err := exec.Command("/bin/sh", "-c", dockerBuildCmd).CombinedOutput()
+		out, err := exec.Command("docker", dockerBuildCmd...).CombinedOutput()
 		if err != nil {
 			fmt.Printf("Failed to build docker image: %s\n%s", err, out)
 			os.Exit(1)
@@ -98,8 +99,12 @@ func StartApp() {
 	}
 
 	{
-		cmd := fmt.Sprintf(dockerRunCmd, apiEndpoint, apiToken, connString)
-		out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
+		cmdStr := fmt.Sprintf(dockerRunCmd, apiEndpoint, apiToken, connString)
+		cmd := exec.Command("bash", "-c", "docker "+cmdStr)
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command("cmd", "/C", cmdStr)
+		}
+		out, err := cmd.CombinedOutput()
 		if err != nil {
 			fmt.Printf("Failed to start docker container: %s\n%s", err, out)
 			os.Exit(1)
@@ -231,7 +236,7 @@ func addAppToStore(db *sql.DB) error {
 }
 
 func teardown() {
-	out, err := exec.Command("/bin/sh", "-c", dockerStopCmd).CombinedOutput()
+	out, err := exec.Command("docker", dockerStopCmd...).CombinedOutput()
 	if err != nil {
 		fmt.Printf("Failed to stop docker container: %s\n%s", err, out)
 		os.Exit(1)
@@ -265,7 +270,7 @@ func waitForContainerReady() error {
 func monitorLogs() {
 	defer teardown()
 
-	logCmd := exec.Command("/bin/sh", "-c", dockerLogsCmd)
+	logCmd := exec.Command("docker", dockerLogsCmd...)
 	// All output is written to stderr.
 	stderr, err := logCmd.StderrPipe()
 	if err != nil {
