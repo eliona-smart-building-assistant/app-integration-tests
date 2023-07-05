@@ -33,8 +33,8 @@ func GetMetadata() (Metadata, []byte, error) {
 	}
 
 	var metadata Metadata
-	if err := json.NewDecoder(file).Decode(&metadata); err != nil {
-		return Metadata{}, data, fmt.Errorf("failed to decode metadata.json: %w", err)
+	if err := json.Unmarshal(data, &metadata); err != nil {
+		return Metadata{}, data, fmt.Errorf("failed unmarhalling metadata.json: %w", err)
 	}
 
 	return metadata, data, nil

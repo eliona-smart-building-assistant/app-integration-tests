@@ -19,6 +19,7 @@ type VersionResponse struct {
 func VersionEndpointExists(t *testing.T) {
 	metadata := getMetadata(t)
 	resp := getUrl(t, fmt.Sprintf("http://localhost:3039/%s/version", metadata.ApiUrl))
+	defer resp.Body.Close()
 
 	versionResponse := decodeResponse[VersionResponse](t, resp)
 	assert.NotEmpty(t, versionResponse.Commit, "Commit field is not empty")
@@ -28,6 +29,7 @@ func VersionEndpointExists(t *testing.T) {
 func APISpecEndpointExists(t *testing.T) {
 	metadata := getMetadata(t)
 	resp := getUrl(t, fmt.Sprintf("http://localhost:3039/%s/%s", metadata.ApiUrl, metadata.ApiSpecificationPath))
+	defer resp.Body.Close()
 
 	_ = decodeResponse[any](t, resp)
 }
@@ -47,7 +49,6 @@ func getMetadata(t *testing.T) app.Metadata {
 
 func getUrl(t *testing.T, url string) *http.Response {
 	resp, err := http.Get(url)
-	defer resp.Body.Close()
 	require.NoErrorf(t, err, "%s should be accessible", url)
 	require.Equal(t, http.StatusOK, resp.StatusCode, "Expected status OK")
 	return resp
