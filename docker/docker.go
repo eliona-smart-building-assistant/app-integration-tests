@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -23,20 +22,27 @@ import (
 
 // Assuming Dockerfile is present in the current directory
 var (
-	dockerBuildCmd = []string{"build", ".", "-t", "go-app-test"}
-	dockerRunCmd   = "run --name go-app-test-container --network eliona-mock-network -d -i -p 3039:3039 -e 'API_ENDPOINT=%s' -e 'API_TOKEN=%s' -e 'CONNECTION_STRING=%s' -e 'LOG_LEVEL=info' -e 'API_SERVER_PORT=3039' go-app-test"
-	dockerLogsCmd  = []string{"logs", "-f", "go-app-test-container"}
-	dockerStopCmd  = []string{"stop", "go-app-test-container"}
-	dockerRmCmd    = []string{"rm", "go-app-test-container"}
+	dockerBuildCmd = []string{"build", ".",
+		"-t", "go-app-test"}
+	dockerRunCmd = []string{"run",
+		"--name", "go-app-test-container",
+		"--network", "eliona-mock-network",
+		"-d",
+		"-i",
+		"-p", "3039:3000",
+		"-e", "API_ENDPOINT=$API_ENDPOINT",
+		"-e", "API_TOKEN=$API_TOKEN",
+		"-e", "CONNECTION_STRING=$CONNECTION_STRING",
+		"-e", "LOG_LEVEL=info",
+		"go-app-test"}
+	dockerLogsCmd = []string{"logs", "-f", "go-app-test-container"}
+	dockerStopCmd = []string{"stop", "go-app-test-container"}
+	dockerRmCmd   = []string{"rm", "go-app-test-container"}
 )
 
 var (
 	appLocation string
 	metadata    app.Metadata
-
-	apiEndpoint string
-	apiToken    string
-	connString  string
 )
 
 func RunApp(m *testing.M) {
@@ -99,12 +105,7 @@ func StartApp() {
 	}
 
 	{
-		cmdStr := fmt.Sprintf(dockerRunCmd, apiEndpoint, apiToken, connString)
-		cmd := exec.Command("bash", "-c", "docker "+cmdStr)
-		if runtime.GOOS == "windows" {
-			cmd = exec.Command("cmd", "/C", cmdStr)
-		}
-		out, err := cmd.CombinedOutput()
+		out, err := exec.Command("docker", expandEnvInArray(dockerRunCmd...)...).CombinedOutput()
 		if err != nil {
 			fmt.Printf("Failed to start docker container: %s\n%s", err, out)
 			os.Exit(1)
@@ -134,20 +135,28 @@ func handleFlags() {
 	}
 }
 
+func expandEnvInArray(arr ...string) []string {
+	result := make([]string, len(arr))
+	for i, str := range arr {
+		result[i] = os.ExpandEnv(str)
+	}
+	return result
+}
+
 func checkEnvVars() error {
 	var present bool
 
-	apiEndpoint, present = os.LookupEnv("API_ENDPOINT")
+	_, present = os.LookupEnv("API_ENDPOINT")
 	if !present {
 		return errors.New("API_ENDPOINT variable not defined.")
 	}
 
-	apiToken, present = os.LookupEnv("API_TOKEN")
+	_, present = os.LookupEnv("API_TOKEN")
 	if !present {
 		return errors.New("API_TOKEN variable not defined.")
 	}
 
-	connString, present = os.LookupEnv("CONNECTION_STRING")
+	_, present = os.LookupEnv("CONNECTION_STRING")
 	if !present {
 		return errors.New("CONNECTION_STRING variable not defined.")
 	}
