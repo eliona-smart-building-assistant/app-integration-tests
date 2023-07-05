@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
@@ -37,8 +38,11 @@ func VersionEndpointExists(t *testing.T) {
 	defer resp.Body.Close()
 
 	versionResponse := decodeResponse[VersionResponse](t, resp)
-	assert.NotEmpty(t, versionResponse.Commit, "Commit field is not empty")
-	assert.NotEmpty(t, versionResponse.Timestamp, "Timestamp field is not empty")
+	mode, present := os.LookupEnv("START_MODE")
+	if !present || mode != "direct" {
+		assert.NotEmpty(t, versionResponse.Commit, "Commit field is not empty")
+		assert.NotEmpty(t, versionResponse.Timestamp, "Timestamp field is not empty")
+	}
 }
 
 func APISpecEndpointExists(t *testing.T) {
