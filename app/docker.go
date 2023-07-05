@@ -1,19 +1,14 @@
-package docker
+package app
 
 import (
 	"bufio"
 	"context"
-	"errors"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
-	"testing"
 	"time"
-
-	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
 
 	_ "github.com/lib/pq"
 )
@@ -38,44 +33,15 @@ var (
 	dockerRmCmd   = []string{"rm", "go-app-test-container"}
 )
 
-var (
-	appLocation string
-)
-
-func RunApp(m *testing.M) {
-	startApp()
-	code := m.Run()
-	StopApp()
-	os.Exit(code)
-}
-
-func startApp() {
-	{
-		out, err := exec.Command("docker", dockerRmCmd...).CombinedOutput()
-		if err != nil {
-			fmt.Printf("Failed to remove docker image: %s\n%s", err, out)
-		}
-	}
-
-	handleFlags()
-	if err := os.Chdir(appLocation); err != nil {
-		fmt.Printf("chdir to %s: %v", appLocation, err)
-		os.Exit(1)
-	}
-
-	if err := checkEnvVars(); err != nil {
-		fmt.Printf("checking environment variables: %v", err)
-		os.Exit(1)
-	}
-
-	if err := resetDB(); err != nil {
-		fmt.Printf("resetting db: %v", err)
-		os.Exit(1)
+func startAppContainer() {
+	out, err := exec.Command("docker", dockerRmCmd...).CombinedOutput()
+	if err != nil {
+		fmt.Printf("Failed to remove docker image: %s\n%s", err, out)
 	}
 
 	// Build and run docker image
 	fmt.Println("Building the image...")
-	out, err := exec.Command("docker", dockerBuildCmd...).CombinedOutput()
+	out, err = exec.Command("docker", dockerBuildCmd...).CombinedOutput()
 	if err != nil {
 		fmt.Printf("Failed to build docker image: %s\n%s", err, out)
 		os.Exit(1)
@@ -87,7 +53,7 @@ func startApp() {
 		os.Exit(1)
 	}
 
-	go monitorLogs()
+	go monitorDockerLogs()
 
 	if err := waitForContainerReady(); err != nil {
 		fmt.Printf("waiting for container to get ready: %v\n", err)
@@ -95,19 +61,10 @@ func startApp() {
 	}
 }
 
-func StopApp() {
+func stopAppContainer() {
 	// Cool down period to notice any errors occurring later after running tests.
 	time.Sleep(time.Second * 1)
-	teardown()
-}
-
-func handleFlags() {
-	flag.StringVar(&appLocation, "app", "", "Path to app")
-	flag.Parse()
-
-	if appLocation == "" {
-		appLocation = "."
-	}
+	teardownDocker()
 }
 
 func expandEnvInArray(arr ...string) []string {
@@ -118,66 +75,7 @@ func expandEnvInArray(arr ...string) []string {
 	return result
 }
 
-func checkEnvVars() error {
-	var present bool
-
-	_, present = os.LookupEnv("API_ENDPOINT")
-	if !present {
-		return errors.New("API_ENDPOINT variable not defined.")
-	}
-
-	_, present = os.LookupEnv("API_TOKEN")
-	if !present {
-		return errors.New("API_TOKEN variable not defined.")
-	}
-
-	_, present = os.LookupEnv("CONNECTION_STRING")
-	if !present {
-		return errors.New("CONNECTION_STRING variable not defined.")
-	}
-	return nil
-}
-
-func resetDB() error {
-	metadata, _, err := app.GetMetadata()
-	if err != nil {
-		return fmt.Errorf("getting metadata: %s", err)
-	}
-
-	db, err := app.InitDB()
-	if err != nil {
-		fmt.Printf("initializing db: %v", err)
-		os.Exit(1)
-	}
-
-	sqlScript, err := os.ReadFile("reset.sql")
-	if err != nil {
-		return fmt.Errorf("reading SQL script: %s", err)
-	}
-
-	_, err = db.Exec(string(sqlScript))
-	if err != nil {
-		return fmt.Errorf("executing SQL script: %s", err)
-	}
-
-	row := db.QueryRow(`
-		SELECT initialized_at
-		FROM public.eliona_app
-		WHERE app_name = $1;
-	`, metadata.Name)
-	var initialized *time.Time
-	if err = row.Scan(&initialized); err != nil {
-		return fmt.Errorf("executing SELECT statement: %s\n", err)
-	}
-
-	// Check if the script reset the initialization state of app
-	if initialized != nil {
-		return fmt.Errorf("unexpected result from SELECT statement: got %v, want nil\n", initialized)
-	}
-	return nil
-}
-
-func teardown() {
+func teardownDocker() {
 	out, err := exec.Command("docker", dockerStopCmd...).CombinedOutput()
 	if err != nil {
 		fmt.Printf("Failed to stop docker container: %s\n%s", err, out)
@@ -191,7 +89,7 @@ func waitForContainerReady() error {
 
 	fmt.Println("Waiting for the container to get ready...")
 
-	metadata, _, err := app.GetMetadata()
+	metadata, _, err := GetMetadata()
 	if err != nil {
 		return fmt.Errorf("getting metadata: %s", err)
 	}
@@ -214,8 +112,8 @@ func waitForContainerReady() error {
 	}
 }
 
-func monitorLogs() {
-	defer teardown()
+func monitorDockerLogs() {
+	defer teardownDocker()
 
 	logCmd := exec.Command("docker", dockerLogsCmd...)
 	// All output is written to stderr.

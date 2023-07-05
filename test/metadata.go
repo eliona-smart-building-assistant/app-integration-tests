@@ -53,7 +53,7 @@ func CanAddAppToStore(t *testing.T) {
 	metadata, metadataData, err := app.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 
-	db, err := app.InitDB()
+	db, err := app.GetDB()
 	require.NoError(t, err, "Connect to database")
 
 	iconFile, err := os.Open("icon")
@@ -75,7 +75,7 @@ func AppIsInitialized(t *testing.T) {
 	metadata, _, err := app.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 
-	db, err := app.InitDB()
+	db, err := app.GetDB()
 	require.NoError(t, err, "Connect to database")
 
 	row := db.QueryRow(`
