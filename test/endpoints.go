@@ -40,7 +40,7 @@ func decodeResponse[T any](t *testing.T, resp *http.Response) T {
 }
 
 func getMetadata(t *testing.T) app.Metadata {
-	metadata, err := app.GetMetadata()
+	metadata, _, err := app.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 	return metadata
 }

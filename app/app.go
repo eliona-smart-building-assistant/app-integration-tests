@@ -1,8 +1,10 @@
 package app
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -18,17 +20,30 @@ type Metadata struct {
 	UseEnvironment         []string          `json:"useEnvironment"`
 }
 
-func GetMetadata() (Metadata, error) {
+func GetMetadata() (Metadata, []byte, error) {
 	file, err := os.Open("metadata.json")
 	if err != nil {
-		return Metadata{}, fmt.Errorf("failed to open metadata.json: %w", err)
+		return Metadata{}, nil, fmt.Errorf("failed to open metadata.json: %w", err)
 	}
 	defer file.Close()
 
-	var metadata Metadata
-	if err := json.NewDecoder(file).Decode(&metadata); err != nil {
-		return Metadata{}, fmt.Errorf("failed to decode metadata.json: %w", err)
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return Metadata{}, data, fmt.Errorf("reading metadata file: %s", err)
 	}
 
-	return metadata, nil
+	var metadata Metadata
+	if err := json.NewDecoder(file).Decode(&metadata); err != nil {
+		return Metadata{}, data, fmt.Errorf("failed to decode metadata.json: %w", err)
+	}
+
+	return metadata, data, nil
+}
+
+func InitDB() (*sql.DB, error) {
+	connString, present := os.LookupEnv("CONNECTION_STRING")
+	if !present {
+		panic("shouldn't happen: connection string missing; should have been checked in TestMain")
+	}
+	return sql.Open("postgres", connString)
 }

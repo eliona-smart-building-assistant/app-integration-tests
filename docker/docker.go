@@ -3,11 +3,9 @@ package docker
 import (
 	"bufio"
 	"context"
-	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -42,17 +40,16 @@ var (
 
 var (
 	appLocation string
-	metadata    app.Metadata
 )
 
 func RunApp(m *testing.M) {
-	StartApp()
+	startApp()
 	code := m.Run()
 	StopApp()
 	os.Exit(code)
 }
 
-func StartApp() {
+func startApp() {
 	{
 		out, err := exec.Command("docker", dockerRmCmd...).CombinedOutput()
 		if err != nil {
@@ -71,45 +68,23 @@ func StartApp() {
 		os.Exit(1)
 	}
 
-	var err error
-	metadata, err = app.GetMetadata()
-	if err != nil {
-		fmt.Printf("getting metadata: %v", err)
-		os.Exit(1)
-	}
-
-	db, err := initDB()
-	if err != nil {
-		fmt.Printf("initializing db: %v", err)
-		os.Exit(1)
-	}
-
-	if err := resetDB(db); err != nil {
+	if err := resetDB(); err != nil {
 		fmt.Printf("resetting db: %v", err)
-		os.Exit(1)
-	}
-
-	if err := addAppToStore(db); err != nil {
-		fmt.Printf("adding app to app store: %v", err)
 		os.Exit(1)
 	}
 
 	// Build and run docker image
 	fmt.Println("Building the image...")
-	{
-		out, err := exec.Command("docker", dockerBuildCmd...).CombinedOutput()
-		if err != nil {
-			fmt.Printf("Failed to build docker image: %s\n%s", err, out)
-			os.Exit(1)
-		}
+	out, err := exec.Command("docker", dockerBuildCmd...).CombinedOutput()
+	if err != nil {
+		fmt.Printf("Failed to build docker image: %s\n%s", err, out)
+		os.Exit(1)
 	}
 
-	{
-		out, err := exec.Command("docker", expandEnvInArray(dockerRunCmd...)...).CombinedOutput()
-		if err != nil {
-			fmt.Printf("Failed to start docker container: %s\n%s", err, out)
-			os.Exit(1)
-		}
+	out, err = exec.Command("docker", expandEnvInArray(dockerRunCmd...)...).CombinedOutput()
+	if err != nil {
+		fmt.Printf("Failed to start docker container: %s\n%s", err, out)
+		os.Exit(1)
 	}
 
 	go monitorLogs()
@@ -163,7 +138,18 @@ func checkEnvVars() error {
 	return nil
 }
 
-func resetDB(db *sql.DB) error {
+func resetDB() error {
+	metadata, _, err := app.GetMetadata()
+	if err != nil {
+		return fmt.Errorf("getting metadata: %s", err)
+	}
+
+	db, err := app.InitDB()
+	if err != nil {
+		fmt.Printf("initializing db: %v", err)
+		os.Exit(1)
+	}
+
 	sqlScript, err := os.ReadFile("reset.sql")
 	if err != nil {
 		return fmt.Errorf("reading SQL script: %s", err)
@@ -171,59 +157,6 @@ func resetDB(db *sql.DB) error {
 
 	_, err = db.Exec(string(sqlScript))
 	if err != nil {
-		return fmt.Errorf("executing SQL script: %s", err)
-	}
-
-	row := db.QueryRow(`
-		SELECT initialized_at
-		FROM public.eliona_app
-		WHERE app_name = $1;
-	`, metadata.Name)
-	var initialized *time.Time
-	if err = row.Scan(&initialized); err != nil {
-		return fmt.Errorf("executing SELECT statement: %s\n", err)
-	}
-
-	// Check if the script reset the initialization state of app
-	if initialized != nil {
-		return fmt.Errorf("unexpected result from SELECT statement: got %v, want nil\n", initialized)
-	}
-	return nil
-}
-
-func initDB() (*sql.DB, error) {
-	connString, present := os.LookupEnv("CONNECTION_STRING")
-	if !present {
-		panic("shouldn't happen: connection string missing; should have been checked in TestMain")
-	}
-	return sql.Open("postgres", connString)
-}
-
-func addAppToStore(db *sql.DB) error {
-	iconFile, err := os.Open("icon")
-	if err != nil {
-		return fmt.Errorf("opening icon file: %s", err)
-	}
-	defer iconFile.Close()
-	iconData, err := io.ReadAll(iconFile)
-	if err != nil {
-		return fmt.Errorf("reading icon file: %s", err)
-	}
-
-	metadataFile, err := os.Open("metadata.json")
-	if err != nil {
-		return fmt.Errorf("opening metadata file: %s", err)
-	}
-	defer metadataFile.Close()
-	metadataData, err := io.ReadAll(metadataFile)
-	if err != nil {
-		return fmt.Errorf("reading metadata file: %s", err)
-	}
-
-	if _, err := db.Exec(`
-		UPDATE eliona_store
-		SET metadata = $1, icon = $2
-		WHERE app_name = $3`, string(metadataData), string(iconData), metadata.Name); err != nil {
 		return fmt.Errorf("executing SQL script: %s", err)
 	}
 
@@ -257,6 +190,11 @@ func waitForContainerReady() error {
 	defer cancel()
 
 	fmt.Println("Waiting for the container to get ready...")
+
+	metadata, _, err := app.GetMetadata()
+	if err != nil {
+		return fmt.Errorf("getting metadata: %s", err)
+	}
 
 	url := fmt.Sprintf("http://localhost:3039/%s/version", metadata.ApiUrl)
 	client := &http.Client{Timeout: 100 * time.Millisecond}
