@@ -17,9 +17,7 @@ package app
 
 import (
 	"bufio"
-	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -70,7 +68,7 @@ func startAppContainer() {
 
 	go monitorDockerLogs()
 
-	if err := waitForContainerReady(); err != nil {
+	if err := waitForAppReady(); err != nil {
 		fmt.Printf("waiting for container to get ready: %v\n", err)
 		os.Exit(1)
 	}
@@ -95,35 +93,6 @@ func teardownDocker() {
 	if err != nil {
 		fmt.Printf("Failed to stop docker container: %s\n%s", err, out)
 		os.Exit(1)
-	}
-}
-
-func waitForContainerReady() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	fmt.Println("Waiting for the container to get ready...")
-
-	metadata, _, err := GetMetadata()
-	if err != nil {
-		return fmt.Errorf("getting metadata: %s", err)
-	}
-
-	url := fmt.Sprintf("http://localhost:3039/%s/version", metadata.ApiUrl)
-	client := &http.Client{Timeout: 100 * time.Millisecond}
-	for {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("container did not become ready in the specified time")
-		case <-time.After(time.Millisecond * 200):
-			resp, err := client.Get(url)
-			if err != nil {
-				continue
-			}
-			if resp.StatusCode == http.StatusOK {
-				return nil
-			}
-		}
 	}
 }
 

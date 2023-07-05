@@ -16,12 +16,14 @@
 package app
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -44,6 +46,7 @@ var (
 )
 
 func RunApp(m *testing.M) {
+	handleEnvironment()
 	resetDB()
 	startApp()
 	code := m.Run()
@@ -60,7 +63,7 @@ func handleFlags() {
 	}
 }
 
-func startApp() {
+func handleEnvironment() {
 	if err := checkEnvVars(); err != nil {
 		fmt.Printf("checking environment variables: %v", err)
 		os.Exit(1)
@@ -71,11 +74,24 @@ func startApp() {
 		fmt.Printf("chdir to %s: %v", appLocation, err)
 		os.Exit(1)
 	}
-	startAppContainer()
+}
+
+func startApp() {
+	mode, present := os.LookupEnv("START_MODE")
+	if present && mode == "direct" {
+		startAppDirectly()
+	} else {
+		startAppContainer()
+	}
 }
 
 func stoppApp() {
-	stopAppContainer()
+	mode, present := os.LookupEnv("START_MODE")
+	if present && mode == "direct" {
+		stopAppDirectly()
+	} else {
+		stopAppContainer()
+	}
 }
 
 func checkEnvVars() error {
@@ -116,6 +132,35 @@ func GetMetadata() (Metadata, []byte, error) {
 	}
 
 	return metadata, data, nil
+}
+
+func waitForAppReady() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	fmt.Println("Waiting for the app to get ready...")
+
+	metadata, _, err := GetMetadata()
+	if err != nil {
+		return fmt.Errorf("getting metadata: %s", err)
+	}
+
+	url := fmt.Sprintf("http://localhost:3039/%s/version", metadata.ApiUrl)
+	client := &http.Client{Timeout: 100 * time.Millisecond}
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("app did not become ready in the specified time")
+		case <-time.After(time.Millisecond * 200):
+			resp, err := client.Get(url)
+			if err != nil {
+				continue
+			}
+			if resp.StatusCode == http.StatusOK {
+				return nil
+			}
+		}
+	}
 }
 
 func resetDB() {
