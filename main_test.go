@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/eliona-smart-building-assistant/app-integration-tests/assert"
 	"github.com/eliona-smart-building-assistant/app-integration-tests/docker"
+	"github.com/eliona-smart-building-assistant/app-integration-tests/test"
 	"testing"
 )
 
@@ -11,5 +11,5 @@ func TestMain(m *testing.M) {
 }
 
 func TestApp(t *testing.T) {
-	assert.AppWorks(t)
+	test.AppWorks(t)
 }
