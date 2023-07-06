@@ -48,8 +48,8 @@ var (
 
 func RunApp(m *testing.M) {
 	StartApp()
-	code := m.Run()
-	StopApp(code)
+	m.Run()
+	StopApp()
 }
 
 func StartApp() {
@@ -63,14 +63,13 @@ func StartApp() {
 	}
 }
 
-func StopApp(code int) {
+func StopApp() {
 	switch startMode() {
 	case startModeDirect:
 		stopAppDirectly()
 	case startModeDocker:
 		stopAppContainer()
 	}
-	os.Exit(code)
 }
 
 const (
