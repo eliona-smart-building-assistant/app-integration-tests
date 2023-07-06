@@ -25,6 +25,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -46,12 +47,43 @@ var (
 )
 
 func RunApp(m *testing.M) {
+	StartApp()
+	code := m.Run()
+	StopApp(code)
+}
+
+func StartApp() {
 	handleEnvironment()
 	resetDB()
-	startApp()
-	code := m.Run()
-	stoppApp()
+	switch startMode() {
+	case startModeDirect:
+		startAppDirectly()
+	case startModeDocker:
+		startAppContainer()
+	}
+}
+
+func StopApp(code int) {
+	switch startMode() {
+	case startModeDirect:
+		stopAppDirectly()
+	case startModeDocker:
+		stopAppContainer()
+	}
 	os.Exit(code)
+}
+
+const (
+	startModeDirect string = "direct"
+	startModeDocker string = "docker"
+)
+
+func startMode() string {
+	mode, present := os.LookupEnv("START_MODE")
+	if present {
+		return strings.ToLower(mode)
+	}
+	return startModeDocker
 }
 
 func handleFlags() {
@@ -73,24 +105,6 @@ func handleEnvironment() {
 	if err := os.Chdir(appLocation); err != nil {
 		fmt.Printf("chdir to %s: %v", appLocation, err)
 		os.Exit(1)
-	}
-}
-
-func startApp() {
-	mode, present := os.LookupEnv("START_MODE")
-	if present && mode == "direct" {
-		startAppDirectly()
-	} else {
-		startAppContainer()
-	}
-}
-
-func stoppApp() {
-	mode, present := os.LookupEnv("START_MODE")
-	if present && mode == "direct" {
-		stopAppDirectly()
-	} else {
-		stopAppContainer()
 	}
 }
 
