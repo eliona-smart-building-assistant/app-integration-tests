@@ -32,8 +32,6 @@ type VersionResponse struct {
 }
 
 func VersionEndpointExists(t *testing.T) {
-	t.Parallel()
-
 	metadata := getMetadata(t)
 	resp := getUrl(t, fmt.Sprintf("http://localhost:3039/%s/version", metadata.ApiUrl))
 	defer resp.Body.Close()
@@ -46,8 +44,6 @@ func VersionEndpointExists(t *testing.T) {
 }
 
 func APISpecEndpointExists(t *testing.T) {
-	t.Parallel()
-
 	metadata := getMetadata(t)
 	resp := getUrl(t, fmt.Sprintf("http://localhost:3039/%s/%s", metadata.ApiUrl, metadata.ApiSpecificationPath))
 	defer resp.Body.Close()
