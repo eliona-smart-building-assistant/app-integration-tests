@@ -32,7 +32,6 @@ var (
 		"-t", "go-app-test"}
 	dockerRunCmd = []string{"run",
 		"--name", "go-app-test-container",
-		"--network", "eliona-mock-network",
 		"-d",
 		"-i",
 		"-p", "3039:3000",
