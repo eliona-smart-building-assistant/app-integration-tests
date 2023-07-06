@@ -39,6 +39,7 @@ var (
 		"-e", "API_TOKEN=$API_TOKEN",
 		"-e", "CONNECTION_STRING=$CONNECTION_STRING",
 		"-e", "LOG_LEVEL=info",
+		"--add-host", "host.docker.internal:host-gateway",
 		"go-app-test"}
 	dockerLogsCmd = []string{"logs", "-f", "go-app-test-container"}
 	dockerStopCmd = []string{"stop", "go-app-test-container"}
