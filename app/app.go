@@ -55,34 +55,34 @@ func RunApp(m *testing.M) {
 func StartApp() {
 	handleEnvironment()
 	resetDB()
-	switch startMode() {
-	case startModeDirect:
+	switch StartMode() {
+	case StartModeDirect:
 		startAppDirectly()
-	case startModeDocker:
+	case StartModeDocker:
 		startAppContainer()
 	}
 }
 
 func StopApp() {
-	switch startMode() {
-	case startModeDirect:
+	switch StartMode() {
+	case StartModeDirect:
 		stopAppDirectly()
-	case startModeDocker:
+	case StartModeDocker:
 		stopAppContainer()
 	}
 }
 
 const (
-	startModeDirect string = "direct"
-	startModeDocker string = "docker"
+	StartModeDirect string = "direct"
+	StartModeDocker string = "docker"
 )
 
-func startMode() string {
+func StartMode() string {
 	mode, present := os.LookupEnv("START_MODE")
 	if present {
 		return strings.ToLower(mode)
 	}
-	return startModeDocker
+	return StartModeDocker
 }
 
 func handleFlags() {

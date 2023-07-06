@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"testing"
 
 	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
@@ -33,19 +32,22 @@ type VersionResponse struct {
 }
 
 func VersionEndpointExists(t *testing.T) {
+	t.Parallel()
+
 	metadata := getMetadata(t)
 	resp := getUrl(t, fmt.Sprintf("http://localhost:3039/%s/version", metadata.ApiUrl))
 	defer resp.Body.Close()
 
 	versionResponse := decodeResponse[VersionResponse](t, resp)
-	mode, present := os.LookupEnv("START_MODE")
-	if !present || mode != "direct" {
+	if app.StartMode() == app.StartModeDocker {
 		assert.NotEmpty(t, versionResponse.Commit, "Commit field is not empty")
 		assert.NotEmpty(t, versionResponse.Timestamp, "Timestamp field is not empty")
 	}
 }
 
 func APISpecEndpointExists(t *testing.T) {
+	t.Parallel()
+
 	metadata := getMetadata(t)
 	resp := getUrl(t, fmt.Sprintf("http://localhost:3039/%s/%s", metadata.ApiUrl, metadata.ApiSpecificationPath))
 	defer resp.Body.Close()

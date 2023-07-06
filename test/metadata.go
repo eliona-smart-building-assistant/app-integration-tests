@@ -33,6 +33,8 @@ import (
 )
 
 func IconFileIsValid(t *testing.T) {
+	t.Parallel()
+
 	file, err := os.Open("icon")
 	if err != nil {
 		t.Fatalf("Failed to open icon file: %s", err)
@@ -65,6 +67,8 @@ func IconFileIsValid(t *testing.T) {
 }
 
 func CanAddAppToStore(t *testing.T) {
+	t.Parallel()
+
 	metadata, metadataData, err := app.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 
@@ -87,6 +91,8 @@ func CanAddAppToStore(t *testing.T) {
 }
 
 func AppIsInitialized(t *testing.T) {
+	t.Parallel()
+
 	metadata, _, err := app.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 
