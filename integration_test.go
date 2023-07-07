@@ -13,16 +13,18 @@
 //  DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-package test
+package main
 
 import (
+	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
+	"github.com/eliona-smart-building-assistant/app-integration-tests/test"
 	"testing"
 )
 
-func AppWorks(t *testing.T) {
-	t.Run("TestAppInitialization", AppIsInitialized)
-	t.Run("TestAppStore", CanAddAppToStore)
-	t.Run("TestIconFile", IconFileIsValid)
-	t.Run("TestVersionEndpoint", VersionEndpointExists)
-	t.Run("TestAPISpecEndpoint", APISpecEndpointExists)
+func TestMain(m *testing.M) {
+	app.RunApp(m)
+}
+
+func TestAppWorks(t *testing.T) {
+	test.AppWorks(t)
 }
