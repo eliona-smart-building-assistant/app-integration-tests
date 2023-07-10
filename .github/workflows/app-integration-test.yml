@@ -23,7 +23,7 @@ jobs:
 
       - name: Run integration test
         id: run_integration_test
-        run: go test -v -run TestApp >> $GITHUB_OUTPUT
+        run: go test -v -run TestApp
         env:
           CONNECTION_STRING: postgres://postgres:secretX@172.17.0.1:5432?sslmode=disable
           API_ENDPOINT: http://172.17.0.1:3000/v2
@@ -42,7 +42,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "[Failed Integration Test](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n{{join(steps.run_integration_test.outputs.*, '\n')}}"
+                    "text": "[Failed Integration Test](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
                   }
                 }
               ]
