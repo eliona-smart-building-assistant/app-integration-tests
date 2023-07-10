@@ -34,19 +34,7 @@ jobs:
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          payload: |
-            {
-              "text": "Integration Test for ${{ github.repository }}: ${{ job.status }}",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "[Failed Integration Test](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-                  }
-                }
-              ]
-            }
+          slack-message: "Integration Test for ${{ github.repository }}: ${{ job.status }}\n\nhttps://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"        
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
