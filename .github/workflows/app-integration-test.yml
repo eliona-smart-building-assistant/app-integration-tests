@@ -34,8 +34,9 @@ jobs:
 #        if: failure()
         uses: rtCamp/action-slack-notify@v2
         env:
+          SLACK_USERNAME: ${{ github.repository }}
           SLACK_WEBHOOK: ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }}
-          SLACK_MESSAGE: "${{ job.status }}: Integration Test for ${{ github.repository }}"
+          SLACK_MESSAGE: "${{ job.status }}: Integration test for app ${{ github.repository }}"
           SLACK_COLOR: ${{ job.status }}
           SLACK_ICON: https://avatars.githubusercontent.com/u/104902996?s=400&u=c6e69d52661bf0947595ccf02471246fd2090eba
           
