@@ -28,3 +28,14 @@ jobs:
           API_ENDPOINT: http://172.17.0.1:3000/v2
           API_TOKEN: secret
           START_MODE: docker
+
+      - name: Notify failures
+        if: failure()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }}
+          SLACK_LINK_NAMES: true
+          SLACK_COLOR: bad
+          SLACK_USERNAME: ${{ github.repository }}
+          SLACK_CHANNEL: apps_monitoring
+          SLACK_MESSAGE: "Integration test for ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }} failed: [Job](${{ github.event.workflow_run.url }})."
