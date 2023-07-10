@@ -24,7 +24,7 @@ jobs:
       - name: Run integration test
         run: go test -v -run TestApp
         env:
-          CONNECTION_STRING: postgres://postgres:secret@172.17.0.1:5432?sslmode=disable
+          CONNECTION_STRING: postgres://postgres:secretX@172.17.0.1:5432?sslmode=disable
           API_ENDPOINT: http://172.17.0.1:3000/v2
           API_TOKEN: secret
           START_MODE: docker
