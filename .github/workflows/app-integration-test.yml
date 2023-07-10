@@ -31,11 +31,21 @@ jobs:
 
       - name: Notify failures
         if: failure()
-        uses: rtCamp/action-slack-notify@v2
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "GitHub Action build result: ${{ job.status }}\n${{ github.event.pull_request.html_url || github.event.head_commit.url }}"
+                  }
+                }
+              ]
+            }
         env:
-          SLACK_WEBHOOK: ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }}
-          SLACK_LINK_NAMES: true
-          SLACK_COLOR: bad
-          SLACK_USERNAME: ${{ github.repository }}
-          SLACK_CHANNEL: apps_monitoring
-          SLACK_MESSAGE: "Integration test for ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }} failed: [Job](${{ github.event.workflow_run.url }})."
+          SLACK_WEBHOOK_URL: ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
