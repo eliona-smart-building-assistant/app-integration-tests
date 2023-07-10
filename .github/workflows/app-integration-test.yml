@@ -31,9 +31,9 @@ jobs:
           START_MODE: docker
 
       - name: Slack Notification
+        if: failure()
         uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_CHANNEL: apps_monitoring
           SLACK_USERNAME: ${{ github.repository }}
           SLACK_WEBHOOK: ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }}
           SLACK_MESSAGE: "${{ job.status }}: Integration test for app ${{ github.repository }}"
