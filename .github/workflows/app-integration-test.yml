@@ -32,9 +32,7 @@ jobs:
 
       - name: Notify failures
         if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
-        with:
-          slack-message: "Integration Test for ${{ github.repository }}: ${{ job.status }}\n\nhttps://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"        
+        uses: rtCamp/action-slack-notify@v2
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+          SLACK_WEBHOOK: ${{ secrets.APPS_MONITORING_SLACK_WEBHOOK }}
+          SLACK_MESSAGE: "Integration Test for ${{ github.repository }}: ${{ job.status }}\n\nhttps://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"     
