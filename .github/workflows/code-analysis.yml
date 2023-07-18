@@ -11,13 +11,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Run go mod tidy and test if everything is changed
+        run: |
+          tidyoutput=$(go mod tidy -v)
+
+          if [[ -n $tidyoutput ]]; then
+            echo "There is something changed during go mod tidy:"
+            echo "$tidyoutput"
+            exit 1
+          fi
+
+          gitdiff=$(git diff)
+
+          if [[ -n $gitdiff ]]; then
+            echo "There is something changed during go mod tidy:"
+            echo "$gitdiff"
+            exit 1
+          fi
+
       - name: Run go fmt to see everything is formatted well
         run: |
-          output=$(go fmt ./...)
+          fmtoutput=$(go fmt ./...)
 
-          if [[ -n $output ]]; then
+          if [[ -n $fmtoutput ]]; then
             echo "There are files that need formatting:"
-            echo "$output"
+            echo "$fmtoutput"
             exit 1
           fi
 
