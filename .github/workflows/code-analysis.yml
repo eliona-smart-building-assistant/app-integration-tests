@@ -1,0 +1,16 @@
+name: Code analysis
+
+on:
+  workflow_call:
+
+jobs:
+  code_analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run go vet to see code problems
+        run: |
+          go vet ./...
