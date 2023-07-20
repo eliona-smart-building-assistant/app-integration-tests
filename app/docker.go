@@ -26,6 +26,10 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// We tried using the Docker SDK, but the version of SDK is dependent on version
+// of Docker daemon. Therefore there were often compatibility problems.
+// If this will be resolved in the future, it would be nice to use the SDK.
+
 // Assuming Dockerfile is present in the current directory
 var (
 	dockerBuildCmd = []string{"build", ".",
