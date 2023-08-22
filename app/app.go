@@ -18,29 +18,16 @@ package app
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
+	"github.com/eliona-smart-building-assistant/go-eliona/app"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
 )
-
-type Metadata struct {
-	Name                   string            `json:"name"`
-	ElionaMinVersion       string            `json:"elionaMinVersion"`
-	DisplayName            map[string]string `json:"displayName"`
-	Description            map[string]string `json:"description"`
-	DashboardTemplateNames []string          `json:"dashboardTemplateNames"`
-	ApiUrl                 string            `json:"apiUrl"`
-	ApiSpecificationPath   string            `json:"apiSpecificationPath"`
-	DocumentationUrl       string            `json:"documentationUrl"`
-	UseEnvironment         []string          `json:"useEnvironment"`
-}
 
 var (
 	appLocation string
@@ -127,33 +114,13 @@ func checkEnvVars() error {
 	return nil
 }
 
-func GetMetadata() (Metadata, []byte, error) {
-	file, err := os.Open("metadata.json")
-	if err != nil {
-		return Metadata{}, nil, fmt.Errorf("failed to open metadata.json: %w", err)
-	}
-	defer file.Close()
-
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return Metadata{}, data, fmt.Errorf("reading metadata file: %s", err)
-	}
-
-	var metadata Metadata
-	if err := json.Unmarshal(data, &metadata); err != nil {
-		return Metadata{}, data, fmt.Errorf("failed unmarhalling metadata.json: %w", err)
-	}
-
-	return metadata, data, nil
-}
-
 func waitForAppReady() error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	fmt.Println("Waiting for the app to get ready...")
 
-	metadata, _, err := GetMetadata()
+	metadata, _, err := app.GetMetadata()
 	if err != nil {
 		return fmt.Errorf("getting metadata: %s", err)
 	}
@@ -177,7 +144,7 @@ func waitForAppReady() error {
 }
 
 func resetDB() {
-	metadata, _, err := GetMetadata()
+	metadata, _, err := app.GetMetadata()
 	if err != nil {
 		fmt.Printf("getting metadata: %s", err)
 		os.Exit(1)
