@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
+	eapp "github.com/eliona-smart-building-assistant/go-eliona/app"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -58,8 +59,8 @@ func decodeResponse[T any](t *testing.T, resp *http.Response) T {
 	return decoded
 }
 
-func getMetadata(t *testing.T) app.Metadata {
-	metadata, _, err := app.GetMetadata()
+func getMetadata(t *testing.T) eapp.Metadata {
+	metadata, _, err := eapp.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 	return metadata
 }

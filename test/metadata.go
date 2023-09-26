@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
+	eapp "github.com/eliona-smart-building-assistant/go-eliona/app"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"image"
@@ -69,7 +70,7 @@ func IconFileIsValid(t *testing.T) {
 func CanAddAppToStore(t *testing.T) {
 	t.Parallel()
 
-	metadata, metadataData, err := app.GetMetadata()
+	metadata, metadataData, err := eapp.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 
 	db, err := app.GetDB()
@@ -93,7 +94,7 @@ func CanAddAppToStore(t *testing.T) {
 func AppIsInitialized(t *testing.T) {
 	t.Parallel()
 
-	metadata, _, err := app.GetMetadata()
+	metadata, _, err := eapp.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 
 	db, err := app.GetDB()

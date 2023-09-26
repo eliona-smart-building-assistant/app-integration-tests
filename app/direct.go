@@ -18,6 +18,7 @@ package app
 import (
 	"bufio"
 	"fmt"
+	"github.com/eliona-smart-building-assistant/go-eliona/app"
 	_ "github.com/lib/pq"
 	"io"
 	"os"
@@ -32,7 +33,7 @@ var (
 )
 
 func startAppDirectly() {
-	metadata, _, err := GetMetadata()
+	metadata, _, err := app.GetMetadata()
 	if err != nil {
 		fmt.Printf("getting metadata: %s", err)
 		os.Exit(1)
