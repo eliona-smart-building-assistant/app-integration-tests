@@ -4,13 +4,14 @@ go 1.20
 
 require (
 	github.com/eliona-smart-building-assistant/go-eliona v1.9.23
+	github.com/eliona-smart-building-assistant/go-utils v1.0.29
 	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.8.4
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/eliona-smart-building-assistant/go-eliona-api-client/v2 v2.5.5 // indirect
+	github.com/eliona-smart-building-assistant/go-eliona-api-client/v2 v2.5.3-2 // indirect
 	github.com/eliona-smart-building-assistant/go-utils v1.0.52 // indirect
 	github.com/friendsofgo/errors v0.9.2 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
