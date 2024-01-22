@@ -17,11 +17,11 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"flag"
 	"fmt"
 	"github.com/eliona-smart-building-assistant/go-eliona/app"
+	"github.com/eliona-smart-building-assistant/go-utils/db"
 	"net/http"
 	"os"
 	"strings"
@@ -99,17 +99,17 @@ func checkEnvVars() error {
 
 	_, present = os.LookupEnv("API_ENDPOINT")
 	if !present {
-		return errors.New("API_ENDPOINT variable not defined.")
+		return errors.New("API_ENDPOINT variable not defined")
 	}
 
 	_, present = os.LookupEnv("API_TOKEN")
 	if !present {
-		return errors.New("API_TOKEN variable not defined.")
+		return errors.New("API_TOKEN variable not defined")
 	}
 
 	_, present = os.LookupEnv("CONNECTION_STRING")
 	if !present {
-		return errors.New("CONNECTION_STRING variable not defined.")
+		return errors.New("CONNECTION_STRING variable not defined")
 	}
 	return nil
 }
@@ -150,11 +150,7 @@ func resetDB() {
 		os.Exit(1)
 	}
 
-	db, err := GetDB()
-	if err != nil {
-		fmt.Printf("initializing db: %v", err)
-		os.Exit(1)
-	}
+	database := db.NewDatabase("dd")
 
 	sqlScript, err := os.ReadFile("reset.sql")
 	if err != nil {
@@ -162,13 +158,13 @@ func resetDB() {
 		os.Exit(1)
 	}
 
-	_, err = db.Exec(string(sqlScript))
+	_, err = database.Exec(string(sqlScript))
 	if err != nil {
 		fmt.Printf("executing SQL script: %s", err)
 		os.Exit(1)
 	}
 
-	row := db.QueryRow(`
+	row := database.QueryRow(`
 		SELECT initialized_at
 		FROM public.eliona_app
 		WHERE app_name = $1;
@@ -184,12 +180,4 @@ func resetDB() {
 		fmt.Printf("unexpected result from SELECT statement: got %v, want nil", initialized)
 		os.Exit(1)
 	}
-}
-
-func GetDB() (*sql.DB, error) {
-	connString, present := os.LookupEnv("CONNECTION_STRING")
-	if !present {
-		panic("shouldn't happen: connection string missing; should have been checked in TestMain")
-	}
-	return sql.Open("postgres", connString)
 }

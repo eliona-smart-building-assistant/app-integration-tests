@@ -19,8 +19,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
 	eapp "github.com/eliona-smart-building-assistant/go-eliona/app"
+	"github.com/eliona-smart-building-assistant/go-utils/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"image"
@@ -73,8 +73,7 @@ func CanAddAppToStore(t *testing.T) {
 	metadata, metadataData, err := eapp.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 
-	db, err := app.GetDB()
-	require.NoError(t, err, "Connect to database")
+	database := db.NewDatabase("app-integration-test")
 
 	iconFile, err := os.Open("icon")
 	require.NoError(t, err, "Opening icon file")
@@ -83,7 +82,7 @@ func CanAddAppToStore(t *testing.T) {
 	iconData, err := io.ReadAll(iconFile)
 	require.NoError(t, err, "Reading icon file")
 
-	if _, err := db.Exec(`
+	if _, err := database.Exec(`
 		UPDATE eliona_store
 		SET metadata = $1, icon = $2
 		WHERE app_name = $3`, string(metadataData), string(iconData), metadata.Name); err != nil {
@@ -97,10 +96,9 @@ func AppIsInitialized(t *testing.T) {
 	metadata, _, err := eapp.GetMetadata()
 	require.NoError(t, err, "Getting metadata successful")
 
-	db, err := app.GetDB()
-	require.NoError(t, err, "Connect to database")
+	database := db.NewDatabase("app-integration-test")
 
-	row := db.QueryRow(`
+	row := database.QueryRow(`
 		SELECT initialized_at
 		FROM public.eliona_app
 		WHERE app_name = $1;

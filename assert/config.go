@@ -17,17 +17,16 @@ package assert
 
 import (
 	"fmt"
-	"github.com/eliona-smart-building-assistant/app-integration-tests/app"
+	"github.com/eliona-smart-building-assistant/go-utils/db"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func AssetTypeExists(t *testing.T, expected string, expectedAttributes []string, msgAndArgs ...any) bool {
-	db, err := app.GetDB()
-	require.NoError(t, err, "Connect to database")
+	database := db.NewDatabase("app-integration-test")
 
-	rows, err := db.Query(`
+	rows, err := database.Query(`
 		SELECT *
 		FROM public.asset_type
 		WHERE asset_type = $1;`, expected)
@@ -38,7 +37,7 @@ func AssetTypeExists(t *testing.T, expected string, expectedAttributes []string,
 
 	if expectedAttributes != nil {
 		for _, expectedAttribute := range expectedAttributes {
-			rows, err := db.Query(`
+			rows, err := database.Query(`
 				SELECT *
 				FROM public.attribute_schema
 				WHERE asset_type = $1 and attribute = $2;`, expected, expectedAttribute)
@@ -53,10 +52,9 @@ func AssetTypeExists(t *testing.T, expected string, expectedAttributes []string,
 }
 
 func WidgetTypeExists(t *testing.T, expected string, msgAndArgs ...any) bool {
-	db, err := app.GetDB()
-	require.NoError(t, err, "Connect to database")
+	database := db.NewDatabase("app-integration-test")
 
-	rows, err := db.Query(`
+	rows, err := database.Query(`
 		SELECT *
 		FROM public.widget_type
 		WHERE widget_type.name = $1;`, expected)
@@ -69,10 +67,9 @@ func WidgetTypeExists(t *testing.T, expected string, msgAndArgs ...any) bool {
 }
 
 func SchemaExists(t *testing.T, expected string, expectedTables []string, msgAndArgs ...any) bool {
-	db, err := app.GetDB()
-	require.NoError(t, err, "Connect to database")
+	database := db.NewDatabase("app-integration-test")
 
-	rows, err := db.Query(`
+	rows, err := database.Query(`
 		SELECT *
 		FROM information_schema.schemata
 		WHERE schema_name = $1;`, expected)
@@ -83,7 +80,7 @@ func SchemaExists(t *testing.T, expected string, expectedTables []string, msgAnd
 
 	if expectedTables != nil {
 		for _, expectedTable := range expectedTables {
-			rows, err := db.Query(`
+			rows, err := database.Query(`
 				SELECT *
 				FROM information_schema.tables
 				WHERE table_schema = $1 and table_name = $2;`, expected, expectedTable)
