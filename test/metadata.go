@@ -19,18 +19,23 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
-	eapp "github.com/eliona-smart-building-assistant/go-eliona/app"
-	"github.com/eliona-smart-building-assistant/go-utils/db"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"image"
+
 	_ "image/jpeg"
 	_ "image/png"
+
+	_ "golang.org/x/image/webp"
+
 	"io"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	eapp "github.com/eliona-smart-building-assistant/go-eliona/app"
+	"github.com/eliona-smart-building-assistant/go-utils/db"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func IconFileIsValid(t *testing.T) {
@@ -47,7 +52,9 @@ func IconFileIsValid(t *testing.T) {
 		t.Fatalf("Failed to read icon file: %s", err)
 	}
 
-	if !strings.HasPrefix(string(iconData), "data:image/png;base64,") && !strings.HasPrefix(string(iconData), "data:image/jpeg;base64,") {
+	if !strings.HasPrefix(string(iconData), "data:image/png;base64,") &&
+		!strings.HasPrefix(string(iconData), "data:image/jpeg;base64,") &&
+		!strings.HasPrefix(string(iconData), "data:image/webp;base64,") {
 		t.Fatalf("Invalid icon data prefix")
 	}
 
