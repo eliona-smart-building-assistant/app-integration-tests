@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/eliona-smart-building-assistant/go-eliona v1.9.34
-	github.com/eliona-smart-building-assistant/go-utils v1.0.62
+	github.com/eliona-smart-building-assistant/go-utils v1.1.0
 	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/image v0.15.0

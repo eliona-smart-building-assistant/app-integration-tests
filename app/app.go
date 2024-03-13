@@ -150,7 +150,7 @@ func resetDB() {
 		os.Exit(1)
 	}
 
-	database := db.NewDatabase("dd")
+	database := db.NewInitDatabase("integration_test")
 
 	sqlScript, err := os.ReadFile("reset.sql")
 	if err != nil {

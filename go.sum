@@ -119,8 +119,8 @@ github.com/eliona-smart-building-assistant/go-eliona v1.9.34 h1:0GoC3ER4/JKszZOj
 github.com/eliona-smart-building-assistant/go-eliona v1.9.34/go.mod h1:WmZj5k0tIv5OfKgBuGZPeReb7uCa+NksgAdueba9Xag=
 github.com/eliona-smart-building-assistant/go-eliona-api-client/v2 v2.6.7 h1:CjRFyF60vVhrUi25KW4fzsdbtzGWlIziDPxtG971xlk=
 github.com/eliona-smart-building-assistant/go-eliona-api-client/v2 v2.6.7/go.mod h1:sZc4lDUFSw114jZhiNcwk2Cppw7khVNfbfyChUDBsso=
-github.com/eliona-smart-building-assistant/go-utils v1.0.62 h1:ZJQLV4JJGYb3vcJJTbQkuwEG1Jg3mkNDXDvnwmp+RHs=
-github.com/eliona-smart-building-assistant/go-utils v1.0.62/go.mod h1:rcRDJItD62tXkniILeEWE0LpHHitfDJbJzIDsw71AfE=
+github.com/eliona-smart-building-assistant/go-utils v1.1.0 h1:vxo3JknOj7LfQ134y7X2MNJG3mgO+7snEMac/FZhprA=
+github.com/eliona-smart-building-assistant/go-utils v1.1.0/go.mod h1:rcRDJItD62tXkniILeEWE0LpHHitfDJbJzIDsw71AfE=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
