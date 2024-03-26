@@ -11,7 +11,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Run go mod tidy and test if everything is changed
+      - name: Run go mod tidy and test if anything is changed
         run: |
           tidyoutput=$(go mod tidy -v)
 
