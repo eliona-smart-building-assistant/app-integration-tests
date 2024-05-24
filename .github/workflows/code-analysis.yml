@@ -11,6 +11,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup current version of Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
       - name: Run go mod tidy and test if anything is changed
         run: |
           tidyoutput=$(go mod tidy -v)

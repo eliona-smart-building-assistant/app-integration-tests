@@ -11,6 +11,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Setup current version of Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
       - name: Start Eliona mock
         run: |
           git clone https://github.com/eliona-smart-building-assistant/eliona-mock.git
@@ -39,4 +44,3 @@ jobs:
           SLACK_MESSAGE: "${{ job.status }}: Integration test for app ${{ github.repository }}"
           SLACK_COLOR: ${{ job.status }}
           SLACK_ICON: https://avatars.githubusercontent.com/u/104902996?s=400&u=c6e69d52661bf0947595ccf02471246fd2090eba
-          
