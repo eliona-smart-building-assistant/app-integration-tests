@@ -20,7 +20,7 @@ jobs:
         run: |
           git clone https://github.com/eliona-smart-building-assistant/eliona-mock.git
           cd eliona-mock
-          docker-compose up -d
+          docker compose up -d
 
       - name: Wait for Eliona mock to be up
         run: |
