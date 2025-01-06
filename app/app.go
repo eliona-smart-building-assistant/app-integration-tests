@@ -20,13 +20,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/eliona-smart-building-assistant/go-eliona/app"
-	"github.com/eliona-smart-building-assistant/go-utils/db"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/eliona-smart-building-assistant/go-eliona/app"
+	"github.com/eliona-smart-building-assistant/go-utils/db"
 )
 
 var (
@@ -154,13 +155,13 @@ func resetDB() {
 
 	sqlScript, err := os.ReadFile("reset.sql")
 	if err != nil {
-		fmt.Printf("reading SQL script: %s", err)
+		fmt.Printf("reading reset SQL script: %s", err)
 		os.Exit(1)
 	}
 
 	_, err = database.Exec(string(sqlScript))
 	if err != nil {
-		fmt.Printf("executing SQL script: %s", err)
+		fmt.Printf("executing reset SQL script failed: %s\nScript: %s\n", err, string(sqlScript))
 		os.Exit(1)
 	}
 
@@ -175,9 +176,8 @@ func resetDB() {
 		os.Exit(1)
 	}
 
-	// Check if the script reset the initialization state of app
 	if initialized != nil {
-		fmt.Printf("unexpected result from SELECT statement: got %v, want nil", initialized)
+		fmt.Printf("checking if reset script reset the initialization state of the app: got %v, want nil", initialized)
 		os.Exit(1)
 	}
 }
