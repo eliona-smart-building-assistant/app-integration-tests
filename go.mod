@@ -3,8 +3,8 @@ module github.com/eliona-smart-building-assistant/app-integration-tests
 go 1.24
 
 require (
-	github.com/eliona-smart-building-assistant/go-eliona v1.10.5
-	github.com/eliona-smart-building-assistant/go-utils v1.1.4
+	github.com/eliona-smart-building-assistant/go-eliona v1.10.7
+	github.com/eliona-smart-building-assistant/go-utils v1.1.5
 	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/image v0.26.0
