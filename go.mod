@@ -4,10 +4,10 @@ go 1.24
 
 require (
 	github.com/eliona-smart-building-assistant/go-eliona v1.10.5
-	github.com/eliona-smart-building-assistant/go-utils v1.1.3
+	github.com/eliona-smart-building-assistant/go-utils v1.1.4
 	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/image v0.25.0
+	golang.org/x/image v0.26.0
 )
 
 require (
@@ -28,8 +28,8 @@ require (
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	github.com/volatiletech/sqlboiler/v4 v4.18.0 // indirect
 	github.com/volatiletech/strmangle v0.0.8 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/crypto v0.37.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
